@@ -40,7 +40,7 @@ func main() {
 		if conn_err != nil {
 			log.Fatal("error handling connection: ", conn_err)
 		} else {
-			go handleConnection(conn_fd, conn_sa) 
+			handleConnection(conn_fd, conn_sa) 
 		}
 	}
 
