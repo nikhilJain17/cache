@@ -3,13 +3,17 @@ package main
 import (
 	"log"
 	"syscall"
+	"encoding/binary"
+	"bytes"
+	// "cache/utils"
 )
 
+const maxMessageSize int = 4096
 const port int = 8080 
+// arrays cannot be const in go
 var addr = [4]byte{127, 0, 0, 1}
 
 func main() {
-
 	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, 0)
 	if err != nil {
 		log.Fatal("error creating tcp socket: ", err)
@@ -46,6 +50,45 @@ func main() {
 
 }
 
+// Read all bytes from a socket
+func readAll(conn_fd int, msgSize int, msg []byte) {
+	// TODO
+}
+
 func handleConnection(conn_fd int, conn_sa syscall.Sockaddr) {
-	log.Println("Received connection with fd ", conn_fd, " and sockaddr ", conn_sa)
+	log.Println("Received connection with fd ", conn_fd)
+
+	var msgSizeArr = make([]byte, 4)  
+	len, err := syscall.Read(conn_fd, msgSizeArr) 
+	if len < 0 {
+		log.Fatal("couldn't read msg size from fd")
+		return
+	}
+	if err != nil {
+		log.Fatal("couldn't read msg size from client: ", err)
+		return
+	}
+	var msgSize int32
+	buf := bytes.NewReader(msgSizeArr)
+	err = binary.Read(buf, binary.LittleEndian, &msgSize) 
+	if err != nil {
+		log.Println("binary.Read failed:", err)
+		return
+	}
+  
+	log.Println("Received msg size from client:\n", msgSize)
+	
+
+	var input = make([]byte, msgSize)
+	len, err = syscall.Read(conn_fd, input)
+	if len < 0 {
+		log.Fatal("couldn't read from fd")
+		return
+	}
+	if err != nil {
+		log.Fatal("couldn't read from client: ", err)
+		return
+	}
+	log.Println("Received message from client:\n", string(input))
+	syscall.Write(conn_fd, []byte("world"))
 }
